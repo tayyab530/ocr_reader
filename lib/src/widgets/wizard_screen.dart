@@ -61,73 +61,45 @@ class _WizardScreenState extends State<WizardScreen> {
       ),
       body: Stack(
         children: [
-          NavigationButtons(),
           SingleChildScrollView(
             controller: _scrollController,
             child: Stepper(
               currentStep: _currentStep,
               physics: ScrollPhysics(),
               onStepTapped: (step) => tapped(step),
-              controlsBuilder: (context, {onStepCancel, onStepContinue}) => Row(
-                children: [
-                  if (_currentStep < 4)
-                    TextButton(
-                      style: TextButton.styleFrom(
-                        backgroundColor: _currentStep == 4
-                            ? Colors.blue[200]
-                            : Colors.transparent,
-                      ),
-                      onPressed: () async {
-                        setState(
-                          () {
-                            _currentStep += 1;
-                            // setAllSelectionTofalse();
-                            isLinkEnable = {false: Type.none};
-                          },
-                        );
-                      },
-                      child: Text('Next '),
-                    ),
-                  if (_currentStep == 4)
-                    TextButton(
-                      onPressed: () async {
-                        var types = _types;
-                        await Navigator.of(context).pushNamed(
-                            PreviewScreen.routeName,
-                            arguments: types);
-                      },
-                      child: Text('Preview '),
-                    ),
-                  if (_currentStep != 0)
-                    TextButton(
-                      onPressed: () {
-                        if (_currentStep > 0)
-                          setState(
-                            () {
-                              _currentStep -= 1;
-                              // setAllSelectionTofalse();
-                              isLinkEnable = {false: Type.none};
-                            },
-                          );
-                      },
-                      child: Text('Previous '),
-                    ),
-                  if (_currentStep != 4)
-                    TextButton(
-                      onPressed: () {
-                        if (_currentStep < 4)
-                          setState(
-                            () {
-                              _currentStep += 1;
-                              // setAllSelectionTofalse();
-                              isLinkEnable = {false: Type.none};
-                            },
-                          );
-                      },
-                      child: Text('Skip '),
-                    ),
-                ],
-              ),
+              controlsBuilder: (context, {onStepCancel, onStepContinue}) =>
+                  Container(),
+              // Row(
+              //   children: [
+              //     if (_currentStep < 4)
+              //       TextButton(
+              //         style: TextButton.styleFrom(
+              //           backgroundColor: _currentStep == 4
+              //               ? Colors.blue[200]
+              //               : Colors.transparent,
+              //         ),
+              //         onPressed: skipStep,
+              //         child: Text('Next '),
+              //       ),
+              //     if (_currentStep == 4)
+              //       TextButton(
+              //         onPressed: gotoPreview,
+              //         child: Text('Preview '),
+              //       ),
+              //     if (_currentStep != 0)
+              //       TextButton(
+              //         onPressed: gotPreviousStep,
+              //         child: Text('Previous '),
+              //       ),
+              //     if (_currentStep != 4)
+              //       TextButton(
+              //         onPressed: () {
+              //           if (_currentStep < 4) skipStep();
+              //         },
+              //         child: Text('Skip '),
+              //       ),
+              //   ],
+              // ),
               steps: [
                 Step(
                   title: Text('Vendor'),
@@ -161,6 +133,12 @@ class _WizardScreenState extends State<WizardScreen> {
                 ),
               ],
             ),
+          ),
+          NavigationButtons(
+            currentStep: _currentStep,
+            skipOrNext: skipStep,
+            gotoPrevious: gotPreviousStep,
+            gotoPreview: gotoPreview,
           ),
         ],
       ),
@@ -355,6 +333,32 @@ class _WizardScreenState extends State<WizardScreen> {
     _scrollController.animateTo(0,
         duration: Duration(seconds: 1, microseconds: 400),
         curve: Curves.easeOut);
+  }
+
+  skipStep() {
+    setState(
+      () {
+        _currentStep += 1;
+        // setAllSelectionTofalse();
+        isLinkEnable = {false: Type.none};
+      },
+    );
+  }
+
+  gotPreviousStep() {
+    if (_currentStep > 0)
+      setState(
+        () {
+          _currentStep -= 1;
+          // setAllSelectionTofalse();
+          isLinkEnable = {false: Type.none};
+        },
+      );
+  }
+
+  gotoPreview() async {
+    await Navigator.of(context)
+        .pushNamed(PreviewScreen.routeName, arguments: _types);
   }
 }
 
