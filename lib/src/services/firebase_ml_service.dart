@@ -3,14 +3,14 @@ import 'package:google_ml_kit/google_ml_kit.dart';
 
 class OcrService with ChangeNotifier {
   final TextDetector _recognizer = GoogleMlKit.vision.textDetector();
-
+  late RecognisedText _extractedText;
   Map<List<String>, List<bool>> _lines = {};
 
   Future<Map<List<String>, List<bool>>> getText(InputImage image) async {
     try {
-      final RecognisedText _text = await _recognizer.processImage(image);
+      _extractedText = await _recognizer.processImage(image);
       int i = 0;
-      for (TextBlock block in _text.blocks) {
+      for (TextBlock block in _extractedText.blocks) {
         for (TextLine line in block.lines) {
           print(line.text);
           _lines.addAll({
@@ -64,4 +64,6 @@ class OcrService with ChangeNotifier {
   bool isAlpha(String str) {
     return double.tryParse(str) == null;
   }
+
+  RecognisedText get text => _extractedText;
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
+import 'package:ocr_reader/src/screens/analysis_screen.dart';
 import 'package:ocr_reader/src/widgets/PreviewScreen.dart';
 import 'package:provider/provider.dart';
 import 'package:google_ml_kit/google_ml_kit.dart';
@@ -28,6 +29,7 @@ class App extends StatelessWidget {
       routes: {
         WizardScreen.routeName: (ctx) => WizardScreen(),
         PreviewScreen.routeName: (ctx) => PreviewScreen(),
+        AnalysisScreen.routeName: (ctx) => AnalysisScreen(),
       },
     );
   }
@@ -66,6 +68,12 @@ class ScanButton extends StatelessWidget {
             await getImageFromCamera(context);
           },
         ),
+        SpeedDialChild(
+          child: Icon(Icons.analytics),
+          onTap: () async {
+            await gotoAnalysis(context);
+          },
+        ),
       ],
     );
   }
@@ -102,5 +110,23 @@ class ScanButton extends StatelessWidget {
       Navigator.of(context).pop();
     });
     await Navigator.of(context).pushNamed(WizardScreen.routeName);
+  }
+
+  gotoAnalysis(BuildContext context) async {
+    final InputImage _image = await _imagePicker.getImageFromGallery();
+    _ocrService.clearData();
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Center(
+          child: CircularProgressIndicator(),
+        );
+      },
+    );
+
+    await _ocrService.getText(_image).then((value) {
+      Navigator.of(context).pop();
+      Navigator.of(context).pushNamed(AnalysisScreen.routeName);
+    });
   }
 }
