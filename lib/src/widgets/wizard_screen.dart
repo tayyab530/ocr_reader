@@ -354,6 +354,12 @@ class _WizardScreenState extends State<WizardScreen> {
     await Navigator.of(context)
         .pushNamed(PreviewScreen.routeName, arguments: _types);
   }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 }
 
 enum Type {
