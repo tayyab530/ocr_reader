@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:ocr_reader/src/services/firebase_ml_service.dart';
 import 'package:ocr_reader/src/widgets/PreviewScreen.dart';
 import 'package:ocr_reader/src/widgets/navigation_buttons.dart';
+import 'package:ocr_reader/src/widgets/step_content.dart';
 import 'package:provider/provider.dart';
 
 class WizardScreen extends StatefulWidget {
@@ -12,7 +13,7 @@ class WizardScreen extends StatefulWidget {
 
 class _WizardScreenState extends State<WizardScreen> {
   bool _showBackToTopButton = false;
-  ScrollController _scrollController = ScrollController();
+  late ScrollController _scrollController;
 
   int _currentStep = 0;
   Map<bool, Type> isLinkEnable = {false: Type.none};
@@ -69,66 +70,55 @@ class _WizardScreenState extends State<WizardScreen> {
               onStepTapped: (step) => tapped(step),
               controlsBuilder: (context, {onStepCancel, onStepContinue}) =>
                   Container(),
-              // Row(
-              //   children: [
-              //     if (_currentStep < 4)
-              //       TextButton(
-              //         style: TextButton.styleFrom(
-              //           backgroundColor: _currentStep == 4
-              //               ? Colors.blue[200]
-              //               : Colors.transparent,
-              //         ),
-              //         onPressed: skipStep,
-              //         child: Text('Next '),
-              //       ),
-              //     if (_currentStep == 4)
-              //       TextButton(
-              //         onPressed: gotoPreview,
-              //         child: Text('Preview '),
-              //       ),
-              //     if (_currentStep != 0)
-              //       TextButton(
-              //         onPressed: gotPreviousStep,
-              //         child: Text('Previous '),
-              //       ),
-              //     if (_currentStep != 4)
-              //       TextButton(
-              //         onPressed: () {
-              //           if (_currentStep < 4) skipStep();
-              //         },
-              //         child: Text('Skip '),
-              //       ),
-              //   ],
-              // ),
               steps: [
                 Step(
                   title: Text('Vendor'),
-                  content: Column(
-                    children: populateColumn(_types[0], Type.vendor),
+                  content: StepContent(
+                    lines: _types[0],
+                    type: Type.vendor,
+                    updateValue: updateValue,
+                    toggleLinkSelection: toggleLinkSelection,
+                    updateKey: updateKey,
                   ),
                 ),
                 Step(
                   title: Text('Items'),
-                  content: Column(
-                    children: populateColumn(_types[1], Type.items),
+                  content: StepContent(
+                    lines: _types[1],
+                    type: Type.items,
+                    updateValue: updateValue,
+                    toggleLinkSelection: toggleLinkSelection,
+                    updateKey: updateKey,
                   ),
                 ),
                 Step(
                   title: Text('Quantity'),
-                  content: Column(
-                    children: populateColumn(_types[2], Type.quantity),
+                  content: StepContent(
+                    lines: _types[2],
+                    type: Type.quantity,
+                    updateValue: updateValue,
+                    toggleLinkSelection: toggleLinkSelection,
+                    updateKey: updateKey,
                   ),
                 ),
                 Step(
                   title: Text('Unit Price'),
-                  content: Column(
-                    children: populateColumn(_types[3], Type.unitPrice),
+                  content: StepContent(
+                    lines: _types[3],
+                    type: Type.unitPrice,
+                    updateValue: updateValue,
+                    toggleLinkSelection: toggleLinkSelection,
+                    updateKey: updateKey,
                   ),
                 ),
                 Step(
                   title: Text('Total Price'),
-                  content: Column(
-                    children: populateColumn(_types[4], Type.totalPrice),
+                  content: StepContent(
+                    lines: _types[4],
+                    type: Type.totalPrice,
+                    updateValue: updateValue,
+                    toggleLinkSelection: toggleLinkSelection,
+                    updateKey: updateKey,
                   ),
                 ),
               ],
@@ -199,7 +189,7 @@ class _WizardScreenState extends State<WizardScreen> {
                 color: !_value[1] ? Colors.grey[300] : Colors.blue,
                 icon: Icon(Icons.add_link),
                 onPressed: () {
-                  toggleTileSelection(type, _value, key);
+                  toggleLinkSelection(type, _value, key);
                 },
               ),
             ),
@@ -225,44 +215,48 @@ class _WizardScreenState extends State<WizardScreen> {
   }
 
   updateValue(Type type, List<bool> newVal, List<String> key) {
-    switch (type) {
-      case Type.vendor:
-        {
-          _types[0][key] = newVal;
-        }
-        break;
-      case Type.items:
-        {
-          _types[1][key] = newVal;
-        }
-        break;
-      case Type.quantity:
-        {
-          _types[2][key] = newVal;
-        }
-        break;
-      case Type.unitPrice:
-        {
-          _types[3][key] = newVal;
-        }
-        break;
-      case Type.totalPrice:
-        {
-          _types[4][key] = newVal;
-        }
-        break;
-      case Type.none:
-        {
-          print('no type');
-        }
-        break;
-    }
+    setState(() {
+      switch (type) {
+        case Type.vendor:
+          {
+            _types[0][key] = newVal;
+          }
+          break;
+        case Type.items:
+          {
+            _types[1][key] = newVal;
+          }
+          break;
+        case Type.quantity:
+          {
+            _types[2][key] = newVal;
+          }
+          break;
+        case Type.unitPrice:
+          {
+            _types[3][key] = newVal;
+          }
+          break;
+        case Type.totalPrice:
+          {
+            _types[4][key] = newVal;
+          }
+          break;
+        case Type.none:
+          {
+            print('no type');
+          }
+          break;
+      }
+    });
   }
 
   updateKey(Type type, _key, String customText) {
-    _types[type.index] = _types[type.index].map((key, value) {
-      if (key == _key) return MapEntry([customText, key[1]], value);
-      return MapEntry(key, value);
+    setState(() {
+      _types[type.index] = _types[type.index].map((key, value) {
+        if (key == _key) return MapEntry([customText, key[1]], value);
+        return MapEntry(key, value);
+      });
     });
   }
 
@@ -320,7 +314,7 @@ class _WizardScreenState extends State<WizardScreen> {
     print(_temp2.toString());
   }
 
-  toggleTileSelection(Type type, List<bool> _value, List<String> key) {
+  toggleLinkSelection(Type type, List<bool> _value, List<String> key) {
     setState(
       () {
         updateValue(type, [_value[0], !_value[1]], key);
