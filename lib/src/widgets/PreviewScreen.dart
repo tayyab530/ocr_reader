@@ -28,9 +28,11 @@ class _PreviewScreenState extends State<PreviewScreen> {
     _data = ModalRoute.of(context)!.settings.arguments
         as List<Map<List<String>, List<bool>>>;
     if (init) {
-      _rowsDataMap = Provider.of<Data>(context).getData()['map'];
-      _totalPrice = Provider.of<Data>(context).getData()['total_price'];
-      _grandTotal = Provider.of<Data>(context).getData()['grand_total'];
+      _rowsDataMap = Provider.of<Data>(context, listen: false).getData()['map'];
+      _totalPrice =
+          Provider.of<Data>(context, listen: false).getData()['total_price'];
+      _grandTotal =
+          Provider.of<Data>(context, listen: false).getData()['grand_total'];
     }
 
     final _appBar = AppBar(
