@@ -1,5 +1,3 @@
-import 'dart:ffi';
-
 import 'package:flutter/cupertino.dart';
 import 'package:google_ml_kit/google_ml_kit.dart';
 
@@ -23,8 +21,8 @@ class OcrService with ChangeNotifier {
         }
       }
       segregateIntoMap();
-      var _result = searchTag('Item', TextType.line);
-      selectItems(_result);
+      var _result = searchTag('price', TextType.element);
+      selectItems(_result, true);
 
       return _linesMap;
     } catch (e) {
@@ -105,32 +103,43 @@ class OcrService with ChangeNotifier {
     print(_segregatedData.toString());
   }
 
-  selectItems(var _searchData) {
-    double _x = _searchData.cornerPoints[0].dx as double;
-    double _y = _searchData.cornerPoints[3].dy as double;
-    List<TextLine> _lines = _segregatedData['lines']!
-        .where(
-            (line) => findAllCOCornerPoints(_x, _y, line.cornerPoints[0], 10.0))
-        .toList() as List<TextLine>;
+  selectItems(var _searchData, bool isNumeric) {
+    double _totalY = searchTag('total', TextType.line).cornerPoints[0].dy;
+    double _itemX = _searchData.cornerPoints[isNumeric ? 2 : 3].dx as double;
+    double _itemY = _searchData.cornerPoints[isNumeric ? 2 : 3].dy as double;
+    print('_totalY $_totalY');
+    print('tag_x $_itemX');
+    print('tag_y $_itemY');
+
+    List<dynamic> _lines = _segregatedData['elements']!
+        .where((line) => findAllCOCornerPoints(_itemX, _itemY,
+            line.cornerPoints[isNumeric ? 1 : 0], 20.0, _totalY))
+        .toList();
     _lines.forEach((element) {
-      print(element.text);
+      print('${element.text} cornerPin ${element.cornerPoints.toString()}');
     });
   }
 
-  findAllCOCornerPoints(
-      double actualX, double actualY, Offset point, double threshold) {
+  findAllCOCornerPoints(double actualX, double actualY, Offset point,
+      double threshold, double totalY) {
     var estimateSum = actualX + threshold;
     var estimateDiff = actualX - threshold;
 
-    if (actualX == point.dx && actualY < point.dy)
+    print('estimated Sum $estimateSum');
+    print('estimated Diff $estimateDiff');
+    print('${point.dx} x ${point.dy} y');
+
+    if (actualX == point.dx && actualY < point.dy && totalY > point.dy)
       return true;
     else if (point.dx <= estimateSum &&
         point.dx > actualX &&
-        actualY < point.dy)
+        actualY < point.dy &&
+        totalY > point.dy)
       return true;
     else if (point.dx >= estimateDiff &&
         point.dx < actualX &&
-        actualY < point.dy)
+        actualY < point.dy &&
+        totalY > point.dy)
       return true;
     else
       return false;
