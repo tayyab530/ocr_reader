@@ -21,14 +21,24 @@ class OcrService with ChangeNotifier {
         }
       }
       segregateIntoMap();
-      var _result = searchTag('price', TextType.element);
-      selectItems(_result, true);
+      var _result = searchTag(
+        'deal',
+        TextType.element,
+      );
+      if (!((_result is TextElement) || (_result is TextLine))) {
+        print('No element found.');
+      } else
+        selectItems(
+          _result,
+          true,
+          track: SearchTrack.horizontal,
+        );
 
       return _linesMap;
     } catch (e) {
       print(e.toString());
+      return Future.value();
     }
-    return Future.value();
   }
 
   clearData() {
@@ -68,14 +78,17 @@ class OcrService with ChangeNotifier {
   }
 
   searchTag(String _tag, TextType type) {
-    var _searchData = _segregatedData.values.toList()[type.index].firstWhere(
-        (data) => data.text.toLowerCase().contains(_tag.toLowerCase()),
-        orElse: null);
-    if (_searchData != null) {
+    var _searchData;
+    try {
+      _searchData = _segregatedData.values.toList()[type.index].singleWhere(
+            (data) => data.text.toLowerCase().contains(_tag.toLowerCase()),
+          );
       print(_searchData.text);
       print(_searchData.cornerPoints.toString());
-    } else
-      print('No data found with tag "$_tag" ');
+    } catch (e) {
+      print(e.toString());
+      return [];
+    }
 
     return _searchData;
   }
@@ -103,43 +116,85 @@ class OcrService with ChangeNotifier {
     print(_segregatedData.toString());
   }
 
-  selectItems(var _searchData, bool isNumeric) {
-    double _totalY = searchTag('total', TextType.line).cornerPoints[0].dy;
-    double _itemX = _searchData.cornerPoints[isNumeric ? 2 : 3].dx as double;
-    double _itemY = _searchData.cornerPoints[isNumeric ? 2 : 3].dy as double;
-    print('_totalY $_totalY');
-    print('tag_x $_itemX');
-    print('tag_y $_itemY');
+  selectItems(var _searchData, bool isNumeric,
+      {SearchTrack track = SearchTrack.vertical}) {
+    double _stopingY = searchTag('total', TextType.line).cornerPoints[0].dy;
+    List<Offset> _cornerPoints = _searchData.cornerPoints;
+    double _tagX = _cornerPoints[isNumeric ? 2 : 3].dx;
+    double _tagY = _searchData.cornerPoints[isNumeric ? 2 : 3].dy as double;
+    double _horizontalThresholdRatio =
+        _cornerPoints[2].dy - _cornerPoints[1].dy;
+    print('_stopingY $_stopingY');
+    print('tag_x $_tagX');
+    print('tag_y $_tagY');
+    print(_horizontalThresholdRatio);
 
-    List<dynamic> _lines = _segregatedData['elements']!
-        .where((line) => findAllCOCornerPoints(_itemX, _itemY,
-            line.cornerPoints[isNumeric ? 1 : 0], 20.0, _totalY))
+    List<dynamic> _lines;
+
+    _lines = _segregatedData['elements']!
+        .where(
+          (line) => track == SearchTrack.vertical
+              ? findAllFieldsVertically(
+                  _tagX,
+                  _tagY,
+                  line.cornerPoints[isNumeric ? 2 : 3],
+                  20.0,
+                  _stopingY,
+                )
+              : findAllFieldsHorizontally(
+                  _tagX,
+                  _tagY,
+                  line.cornerPoints[isNumeric ? 2 : 3],
+                  1 * _horizontalThresholdRatio,
+                ),
+        )
         .toList();
-    _lines.forEach((element) {
-      print('${element.text} cornerPin ${element.cornerPoints.toString()}');
-    });
+    _lines.forEach(
+      (element) {
+        print('${element.text} cornerPin ${element.cornerPoints.toString()}');
+      },
+    );
   }
 
-  findAllCOCornerPoints(double actualX, double actualY, Offset point,
-      double threshold, double totalY) {
-    var estimateSum = actualX + threshold;
-    var estimateDiff = actualX - threshold;
+  findAllFieldsVertically(
+      double tagX, double tagY, Offset point, double threshold, double totalY) {
+    var estimateSum = tagX + threshold;
+    var estimateDiff = tagX - threshold;
 
     print('estimated Sum $estimateSum');
     print('estimated Diff $estimateDiff');
     print('${point.dx} x ${point.dy} y');
 
-    if (actualX == point.dx && actualY < point.dy && totalY > point.dy)
+    if (tagX == point.dx && tagY < point.dy && totalY > point.dy)
       return true;
     else if (point.dx <= estimateSum &&
-        point.dx > actualX &&
-        actualY < point.dy &&
+        point.dx > tagX &&
+        tagY < point.dy &&
         totalY > point.dy)
       return true;
     else if (point.dx >= estimateDiff &&
-        point.dx < actualX &&
-        actualY < point.dy &&
+        point.dx < tagX &&
+        tagY < point.dy &&
         totalY > point.dy)
+      return true;
+    else
+      return false;
+  }
+
+  findAllFieldsHorizontally(
+      double tagX, double tagY, Offset point, double threshold) {
+    var estimateSum = tagY + threshold;
+    var estimateDiff = tagY - threshold;
+
+    print('estimated Sum $estimateSum');
+    print('estimated Diff $estimateDiff');
+    print('${point.dx} x ${point.dy} y');
+
+    if (tagY == point.dy && tagX < point.dx)
+      return true;
+    else if (point.dy <= estimateSum && point.dy > tagY && tagX < point.dx)
+      return true;
+    else if (point.dy >= estimateDiff && point.dy < tagY && tagX < point.dx)
       return true;
     else
       return false;
@@ -153,4 +208,9 @@ enum TextType {
   block,
   line,
   element,
+}
+
+enum SearchTrack {
+  vertical,
+  horizontal,
 }
