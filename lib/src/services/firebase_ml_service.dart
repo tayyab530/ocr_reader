@@ -20,25 +20,75 @@ class OcrService with ChangeNotifier {
           i++;
         }
       }
-      segregateIntoMap();
-      var _result = searchTag(
-        ['products', 'item name', 'grand total'],
-        TextType.line,
-        enableMultipleTags: true,
-      );
-      if (!((_result is TextElement) || (_result is TextLine))) {
-        print('No element found.');
-      } else
-        selectItems(
-          _result,
-          true,
-          track: SearchTrack.horizontal,
-        );
 
       return _linesMap;
     } catch (e) {
       print(e.toString());
       return Future.value();
+    }
+  }
+
+  Future<List<Map<List<String>, List<bool>>>> getSmartData(
+      InputImage image) async {
+    try {
+      _extractedText = await _recognizer.processImage(image);
+      segregateIntoMap();
+      List<dynamic> _item = findData(
+        ['item'],
+        TextType.line,
+        false,
+        false,
+        SearchTrack.vertical,
+        'total',
+      );
+
+      List<dynamic> _date = findData(
+        ['invoice date', 'order date', 'delievery date', 'date'],
+        TextType.line,
+        true,
+        false,
+        SearchTrack.horizontal,
+        'total',
+      );
+
+      List<dynamic> _amount = findData(
+        ['amount'],
+        TextType.line,
+        false,
+        true,
+        SearchTrack.vertical,
+        'total',
+      );
+
+      List<dynamic> _quantity = findData(
+        ['quantity'],
+        TextType.line,
+        false,
+        true,
+        SearchTrack.vertical,
+        'total',
+      );
+
+      List<dynamic> _total = findData(
+        ['total'],
+        TextType.element,
+        false,
+        false,
+        SearchTrack.horizontal, //Offset(220.0, 1112.0)
+        'total',
+      );
+
+      List<Map<List<String>, List<bool>>> _finalListofData = [
+        {},
+        toMap(_item),
+        toMap(_quantity),
+        toMap(_amount),
+        toMap(_total),
+      ];
+      return _finalListofData;
+    } catch (e) {
+      print(e.toString());
+      return Future.value([]);
     }
   }
 
@@ -78,8 +128,38 @@ class OcrService with ChangeNotifier {
     return double.tryParse(str) == null;
   }
 
-  searchTag(List<String> _tags, TextType type,
-      {bool enableMultipleTags = false}) {
+  List<dynamic> findData(
+    List<String> _tags,
+    TextType _textType,
+    bool enableMulTags,
+    bool isNumeric,
+    SearchTrack track,
+    String yRef,
+  ) {
+    var _result = searchTag(
+      _tags,
+      _textType,
+      enableMulTags,
+      track,
+    );
+    if (!((_result is TextElement) || (_result is TextLine))) {
+      print('No element found.');
+      return [];
+    } else
+      return selectItems(
+        _result,
+        isNumeric,
+        track,
+        yRef,
+      );
+  }
+
+  searchTag(
+    List<String> _tags,
+    TextType type,
+    bool enableMultipleTags,
+    SearchTrack track,
+  ) {
     var _searchData;
 
     if (!enableMultipleTags) {
@@ -119,10 +199,11 @@ class OcrService with ChangeNotifier {
                 List<Offset> _tagAllCordinate = _searchLineData.cornerPoints;
                 Offset _tagCordinate = _tagAllCordinate[3];
                 bool pointsContain = findAllFieldsHorizontally(
-                    _tagCordinate.dx,
-                    _tagCordinate.dy,
-                    data.cornerPoints[3],
-                    _tagAllCordinate[2].dy - _tagAllCordinate[1].dy);
+                  _tagCordinate.dx,
+                  _tagCordinate.dy,
+                  data.cornerPoints[3],
+                  _tagAllCordinate[2].dy - _tagAllCordinate[1].dy,
+                );
                 print('pointsContain $pointsContain');
                 return pointsContain;
               }
@@ -165,18 +246,27 @@ class OcrService with ChangeNotifier {
     print(_segregatedData.toString());
   }
 
-  selectItems(var _searchData, bool isNumeric,
-      {SearchTrack track = SearchTrack.vertical}) {
-    double _stopingY = searchTag(['total'], TextType.line).cornerPoints[0].dy;
+  List<dynamic> selectItems(
+    var _searchData,
+    bool isNumeric,
+    SearchTrack track,
+    String yRef,
+  ) {
+    double _stopingY = 0.0;
+    if (track == SearchTrack.vertical) {
+      _stopingY = searchTag([yRef], TextType.line, false, SearchTrack.vertical)
+          .cornerPoints[0]
+          .dy;
+      print('_stopingY $_stopingY');
+    }
     List<Offset> _cornerPoints = _searchData.cornerPoints;
     double _tagX = _cornerPoints[isNumeric ? 2 : 3].dx;
     double _tagY = _searchData.cornerPoints[isNumeric ? 2 : 3].dy as double;
     double _horizontalThresholdRatio =
         _cornerPoints[2].dy - _cornerPoints[1].dy;
-    print('_stopingY $_stopingY');
     print('tag_x $_tagX');
     print('tag_y $_tagY');
-    print(_horizontalThresholdRatio);
+    print("_horizontalThresholdRatio $_horizontalThresholdRatio");
 
     List<dynamic> _lines;
 
@@ -203,6 +293,7 @@ class OcrService with ChangeNotifier {
         print('${element.text} cornerPin ${element.cornerPoints.toString()}');
       },
     );
+    return _lines;
   }
 
   bool findAllFieldsVertically(
@@ -251,6 +342,18 @@ class OcrService with ChangeNotifier {
 
   RecognisedText get text => _extractedText;
   Map<List<String>, List<bool>> get lines => _linesMap;
+
+  Map<List<String>, List<bool>> toMap(List<dynamic> _list) {
+    Map<List<String>, List<bool>> _map = {};
+    int i = 0;
+    for (var field in _list) {
+      _map.addAll({
+        [field.text, i.toString()]: [true, true],
+      });
+      i++;
+    }
+    return _map;
+  }
 }
 
 enum TextType {
