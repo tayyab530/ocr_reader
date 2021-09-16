@@ -22,8 +22,9 @@ class OcrService with ChangeNotifier {
       }
       segregateIntoMap();
       var _result = searchTag(
-        'deal',
-        TextType.element,
+        ['products', 'item name', 'grand total'],
+        TextType.line,
+        enableMultipleTags: true,
       );
       if (!((_result is TextElement) || (_result is TextLine))) {
         print('No element found.');
@@ -77,17 +78,65 @@ class OcrService with ChangeNotifier {
     return double.tryParse(str) == null;
   }
 
-  searchTag(String _tag, TextType type) {
+  searchTag(List<String> _tags, TextType type,
+      {bool enableMultipleTags = false}) {
     var _searchData;
-    try {
-      _searchData = _segregatedData.values.toList()[type.index].singleWhere(
-            (data) => data.text.toLowerCase().contains(_tag.toLowerCase()),
+
+    if (!enableMultipleTags) {
+      try {
+        _searchData = _segregatedData.values.toList()[type.index].firstWhere(
+              (data) =>
+                  data.text.toLowerCase().contains(_tags[0].toLowerCase()),
+            );
+        print(_searchData.text);
+        print(_searchData.cornerPoints.toString());
+      } catch (e) {
+        print(e.toString());
+        return [];
+      }
+    } else {
+      for (String tag in _tags) {
+        try {
+          var _splittedTag = tag.split(' ');
+          TextLine _searchLineData;
+          _searchLineData =
+              _segregatedData.values.toList()[type.index].firstWhere(
+                    (data) => data.text.toLowerCase().contains(
+                          tag.toLowerCase(),
+                        ),
+                  );
+          print(_searchLineData.text + " searched line");
+          print("_splittedTag ${_splittedTag[_splittedTag.length - 1]}");
+          _searchData = _segregatedData.values
+              .toList()[TextType.element.index]
+              .firstWhere(
+            (data) {
+              bool isContain = data.text.toLowerCase().contains(
+                    _splittedTag[_splittedTag.length - 1].toLowerCase(),
+                  );
+              if (isContain) {
+                print("data.text ${data.text}");
+                List<Offset> _tagAllCordinate = _searchLineData.cornerPoints;
+                Offset _tagCordinate = _tagAllCordinate[3];
+                bool pointsContain = findAllFieldsHorizontally(
+                    _tagCordinate.dx,
+                    _tagCordinate.dy,
+                    data.cornerPoints[3],
+                    _tagAllCordinate[2].dy - _tagAllCordinate[1].dy);
+                print('pointsContain $pointsContain');
+                return pointsContain;
+              }
+              return false;
+            },
           );
-      print(_searchData.text);
-      print(_searchData.cornerPoints.toString());
-    } catch (e) {
-      print(e.toString());
-      return [];
+          print(_searchData.text);
+          print(_searchData.cornerPoints.toString());
+          break;
+        } catch (e) {
+          print(e.toString());
+          _searchData = [];
+        }
+      }
     }
 
     return _searchData;
@@ -118,7 +167,7 @@ class OcrService with ChangeNotifier {
 
   selectItems(var _searchData, bool isNumeric,
       {SearchTrack track = SearchTrack.vertical}) {
-    double _stopingY = searchTag('total', TextType.line).cornerPoints[0].dy;
+    double _stopingY = searchTag(['total'], TextType.line).cornerPoints[0].dy;
     List<Offset> _cornerPoints = _searchData.cornerPoints;
     double _tagX = _cornerPoints[isNumeric ? 2 : 3].dx;
     double _tagY = _searchData.cornerPoints[isNumeric ? 2 : 3].dy as double;
@@ -156,7 +205,7 @@ class OcrService with ChangeNotifier {
     );
   }
 
-  findAllFieldsVertically(
+  bool findAllFieldsVertically(
       double tagX, double tagY, Offset point, double threshold, double totalY) {
     var estimateSum = tagX + threshold;
     var estimateDiff = tagX - threshold;
@@ -181,11 +230,11 @@ class OcrService with ChangeNotifier {
       return false;
   }
 
-  findAllFieldsHorizontally(
+  bool findAllFieldsHorizontally(
       double tagX, double tagY, Offset point, double threshold) {
     var estimateSum = tagY + threshold;
     var estimateDiff = tagY - threshold;
-
+    print('x reference $tagX');
     print('estimated Sum $estimateSum');
     print('estimated Diff $estimateDiff');
     print('${point.dx} x ${point.dy} y');
