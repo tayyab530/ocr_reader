@@ -79,7 +79,7 @@ class OcrService with ChangeNotifier {
       );
 
       List<Map<List<String>, List<bool>>> _finalListofData = [
-        {},
+        toMap(findFirstNonEmpty(_segregatedData['lines']!)),
         toMap(_item),
         toMap(_quantity),
         toMap(_amount),
@@ -353,6 +353,14 @@ class OcrService with ChangeNotifier {
       i++;
     }
     return _map;
+  }
+
+  findFirstNonEmpty(List<dynamic> _list) {
+    var _vendor = _list.firstWhere((element) {
+      print(element.text);
+      return element.text.isNotEmpty;
+    });
+    return [_vendor];
   }
 }
 

@@ -15,6 +15,7 @@ class _PreviewScreenState extends State<PreviewScreen> {
   bool init = false;
   List<Map<List<String>, List<bool>>> _data = [];
   Map<String, List<String>> _rowsDataMap = {};
+  String _vendor = 'Default';
   String _totalPrice = '0.0';
   String _grandTotal = '0.0';
 
@@ -34,6 +35,7 @@ class _PreviewScreenState extends State<PreviewScreen> {
       _grandTotal =
           Provider.of<Data>(context, listen: false).getData()['grand_total'];
     }
+    if (!init) _vendor = _data[0].keys.first.first;
 
     final _appBar = AppBar(
       title: Text('Preview Receipt'),
@@ -48,6 +50,7 @@ class _PreviewScreenState extends State<PreviewScreen> {
       appBar: _appBar,
       body: Column(
         children: [
+          Chip(label: Text(_vendor)),
           Container(
             height: _height * 0.85,
             child: InteractiveViewer(
@@ -235,8 +238,26 @@ class _PreviewScreenState extends State<PreviewScreen> {
               ),
             ),
             DataCell(
-              Text(
-                value[3],
+              Row(
+                children: [
+                  Text(
+                    value[3],
+                  ),
+                  FittedBox(
+                    fit: BoxFit.contain,
+                    child: IconButton(
+                      icon: Icon(
+                        Icons.delete_rounded,
+                        color: Colors.red,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _rowsDataMap.remove(key);
+                        });
+                      },
+                    ),
+                  ),
+                ],
               ),
             ),
           ],

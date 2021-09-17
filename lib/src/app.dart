@@ -91,7 +91,10 @@ class ScanButton extends StatelessWidget {
     );
     List<Map<List<String>, List<bool>>> _data =
         await _ocrService.getSmartData(_image);
-    if (_data.isNotEmpty || _data[1].isNotEmpty) {
+    if (_data[1].isNotEmpty) {
+      print('_data[1].isEmpty' +
+          _data[1].isEmpty.toString() +
+          _data[1].toString());
       Navigator.of(context).pop();
       await Navigator.of(context)
           .pushNamed(PreviewScreen.routeName, arguments: _data);
