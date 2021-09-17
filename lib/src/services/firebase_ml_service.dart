@@ -34,9 +34,9 @@ class OcrService with ChangeNotifier {
       _extractedText = await _recognizer.processImage(image);
       segregateIntoMap();
       List<dynamic> _item = findData(
-        ['item'],
+        ['item', 'product', 'barcode'],
         TextType.line,
-        false,
+        true,
         false,
         SearchTrack.vertical,
         'total',
@@ -330,11 +330,11 @@ class OcrService with ChangeNotifier {
     print('estimated Diff $estimateDiff');
     print('${point.dx} x ${point.dy} y');
 
-    if (tagY == point.dy && tagX < point.dx)
+    if (tagY == point.dy && tagX <= point.dx)
       return true;
-    else if (point.dy <= estimateSum && point.dy > tagY && tagX < point.dx)
+    else if (point.dy <= estimateSum && point.dy > tagY && tagX <= point.dx)
       return true;
-    else if (point.dy >= estimateDiff && point.dy < tagY && tagX < point.dx)
+    else if (point.dy >= estimateDiff && point.dy < tagY && tagX <= point.dx)
       return true;
     else
       return false;

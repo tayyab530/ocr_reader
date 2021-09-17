@@ -50,9 +50,11 @@ class _PreviewScreenState extends State<PreviewScreen> {
       appBar: _appBar,
       body: Column(
         children: [
-          Chip(label: Text(_vendor)),
+          Chip(
+            label: Text(_vendor),
+          ),
           Container(
-            height: _height * 0.85,
+            height: _height * 0.78,
             child: InteractiveViewer(
               constrained: false,
               child: DataTable(
@@ -91,8 +93,8 @@ class _PreviewScreenState extends State<PreviewScreen> {
           ),
           Container(
             alignment: Alignment.center,
-            margin: const EdgeInsets.symmetric(
-              vertical: 10.0,
+            margin: EdgeInsets.symmetric(
+              vertical: _height * 0.005,
               horizontal: 10.0,
             ),
             child: Row(
@@ -171,7 +173,7 @@ class _PreviewScreenState extends State<PreviewScreen> {
       print('i = $i _list[0] length = ${_list[0].length}');
 
       if (i >= _list[1].length)
-        _rowData[i].add('0.0');
+        _rowData[i].add('0');
       else
         _rowData[i].add(_list[1][i]);
       print('i = $i _list[0] length = ${_list[1].length}');
@@ -215,17 +217,6 @@ class _PreviewScreenState extends State<PreviewScreen> {
               Text(
                 value[0],
               ),
-              showEditIcon: true,
-              onTap: () async {
-                await showDialog(
-                  context: context,
-                  builder: (context) {
-                    return Dialog(
-                      child: RowEditForm(key, refresh),
-                    );
-                  },
-                );
-              },
             ),
             DataCell(
               Text(
@@ -239,9 +230,28 @@ class _PreviewScreenState extends State<PreviewScreen> {
             ),
             DataCell(
               Row(
+                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   Text(
                     value[3],
+                  ),
+                  FittedBox(
+                    fit: BoxFit.contain,
+                    child: IconButton(
+                      icon: Icon(
+                        Icons.edit_rounded,
+                      ),
+                      onPressed: () async {
+                        await showDialog(
+                          context: context,
+                          builder: (context) {
+                            return Dialog(
+                              child: RowEditForm(key, refresh),
+                            );
+                          },
+                        );
+                      },
+                    ),
                   ),
                   FittedBox(
                     fit: BoxFit.contain,
