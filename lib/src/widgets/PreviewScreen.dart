@@ -141,7 +141,7 @@ class _PreviewScreenState extends State<PreviewScreen> {
     List<List<String>> _list = [];
     final _dataProvider = Provider.of<Data>(context);
 
-    for (int i = 1; i < 5; i++) {
+    for (int i = 1; i < 6; i++) {
       _data[i].removeWhere(
         (key, value) {
           return !value[0];
@@ -162,6 +162,7 @@ class _PreviewScreenState extends State<PreviewScreen> {
     int _maxLength = maxLength(_list);
     print('max length = $_maxLength');
     _totalPrice = _list[3].isEmpty ? '0.0' : _list[3].first;
+
     for (int i = 0; i < _maxLength; i++) {
       _rowData.add([]);
     }
@@ -184,7 +185,7 @@ class _PreviewScreenState extends State<PreviewScreen> {
         _rowData[i].add(_list[2][i]);
       print('i = $i _list[0] length = ${_list[2].length}');
 
-      _rowData[i].add('0');
+      _rowData[i].add(_list[4].isEmpty ? '0.0' : _list[4].first);
     }
     print(_rowData.toString());
     for (int i = 1; i <= _maxLength; i++) {

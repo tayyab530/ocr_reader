@@ -32,16 +32,30 @@ class OcrService with ChangeNotifier {
       InputImage image) async {
     try {
       _extractedText = await _recognizer.processImage(image);
+
+      int i = 0;
+      for (TextBlock block in _extractedText.blocks) {
+        for (TextLine line in block.lines) {
+          print(line.text);
+          _linesMap.addAll({
+            [line.text, i.toString()]: [false, false]
+          });
+          i++;
+        }
+      }
+
       segregateIntoMap();
       List<dynamic> _item = findData(
-        ['item', 'product', 'barcode'],
+        ['item', 'product', 'barcode', 'description'],
         TextType.line,
         true,
         false,
         SearchTrack.vertical,
         'total',
+        includeLine: true,
       );
 
+      // ignore: unused_local_variable
       List<dynamic> _date = findData(
         ['invoice date', 'order date', 'delievery date', 'date'],
         TextType.line,
@@ -51,39 +65,49 @@ class OcrService with ChangeNotifier {
         'total',
       );
 
-      List<dynamic> _amount = findData(
-        ['amount'],
+      List<dynamic> _unitPrice = findData(
+        ['rate', 'value', 'amount', 'price'],
         TextType.line,
-        false,
+        true,
         true,
         SearchTrack.vertical,
         'total',
       );
 
       List<dynamic> _quantity = findData(
-        ['quantity'],
+        ['quantity', 'qty'],
         TextType.line,
-        false,
         true,
+        false,
         SearchTrack.vertical,
         'total',
       );
 
       List<dynamic> _total = findData(
         ['total'],
-        TextType.element,
+        TextType.line,
         false,
         false,
         SearchTrack.horizontal, //Offset(220.0, 1112.0)
         'total',
+        includeLine: true,
       );
+
+      // ignore: unused_local_variable
+      List<dynamic> _tax = findData([
+        'tax amount',
+        'vat',
+        'tax',
+      ], TextType.line, true, true, SearchTrack.horizontal, 'total',
+          includeLine: true);
 
       List<Map<List<String>, List<bool>>> _finalListofData = [
         toMap(findFirstNonEmpty(_segregatedData['lines']!)),
         toMap(_item),
         toMap(_quantity),
-        toMap(_amount),
+        toMap(_unitPrice),
         toMap(_total),
+        toMap(_tax),
       ];
       return _finalListofData;
     } catch (e) {
@@ -134,8 +158,9 @@ class OcrService with ChangeNotifier {
     bool enableMulTags,
     bool isNumeric,
     SearchTrack track,
-    String yRef,
-  ) {
+    String yRef, {
+    bool includeLine = false,
+  }) {
     var _result = searchTag(
       _tags,
       _textType,
@@ -148,9 +173,11 @@ class OcrService with ChangeNotifier {
     } else
       return selectItems(
         _result,
+        _textType,
         isNumeric,
         track,
         yRef,
+        includeLine,
       );
   }
 
@@ -199,11 +226,11 @@ class OcrService with ChangeNotifier {
                 List<Offset> _tagAllCordinate = _searchLineData.cornerPoints;
                 Offset _tagCordinate = _tagAllCordinate[3];
                 bool pointsContain = findAllFieldsHorizontally(
-                  _tagCordinate.dx,
-                  _tagCordinate.dy,
-                  data.cornerPoints[3],
-                  _tagAllCordinate[2].dy - _tagAllCordinate[1].dy,
-                );
+                    _tagCordinate.dx,
+                    _tagCordinate.dy,
+                    data.cornerPoints[3],
+                    _tagAllCordinate[2].dy - _tagAllCordinate[1].dy,
+                    isOnSameLine: true);
                 print('pointsContain $pointsContain');
                 return pointsContain;
               }
@@ -248,15 +275,22 @@ class OcrService with ChangeNotifier {
 
   List<dynamic> selectItems(
     var _searchData,
+    TextType type,
     bool isNumeric,
     SearchTrack track,
     String yRef,
+    bool includeLine,
   ) {
     double _stopingY = 0.0;
     if (track == SearchTrack.vertical) {
-      _stopingY = searchTag([yRef], TextType.line, false, SearchTrack.vertical)
-          .cornerPoints[0]
-          .dy;
+      var _stopingYRef = searchTag(
+          [yRef, 'bill amount'], TextType.line, true, SearchTrack.vertical);
+      if (_stopingYRef is TextLine)
+        _stopingY = _stopingYRef.cornerPoints[0].dy;
+      else {
+        _stopingY =
+            _segregatedData['blocks']!.last.cornerPoints[2].dy as double;
+      }
       print('_stopingY $_stopingY');
     }
     List<Offset> _cornerPoints = _searchData.cornerPoints;
@@ -270,7 +304,7 @@ class OcrService with ChangeNotifier {
 
     List<dynamic> _lines;
 
-    _lines = _segregatedData['elements']!
+    _lines = _segregatedData[includeLine ? 'lines' : 'elements']!
         .where(
           (line) => track == SearchTrack.vertical
               ? findAllFieldsVertically(
@@ -279,6 +313,7 @@ class OcrService with ChangeNotifier {
                   line.cornerPoints[isNumeric ? 2 : 3],
                   20.0,
                   _stopingY,
+                  line.text,
                 )
               : findAllFieldsHorizontally(
                   _tagX,
@@ -296,45 +331,49 @@ class OcrService with ChangeNotifier {
     return _lines;
   }
 
-  bool findAllFieldsVertically(
-      double tagX, double tagY, Offset point, double threshold, double totalY) {
+  bool findAllFieldsVertically(double tagX, double tagY, Offset point,
+      double threshold, double stopingYRef, String text) {
     var estimateSum = tagX + threshold;
     var estimateDiff = tagX - threshold;
-
-    print('estimated Sum $estimateSum');
-    print('estimated Diff $estimateDiff');
+    print('point text $text');
+    print('estimated Sum for x $estimateSum');
+    print('estimated Diff for x $estimateDiff');
+    print('stopingYRef $stopingYRef');
     print('${point.dx} x ${point.dy} y');
 
-    if (tagX == point.dx && tagY < point.dy && totalY > point.dy)
+    if (tagX == point.dx && tagY < point.dy && stopingYRef > point.dy)
       return true;
     else if (point.dx <= estimateSum &&
         point.dx > tagX &&
         tagY < point.dy &&
-        totalY > point.dy)
+        stopingYRef > point.dy)
       return true;
     else if (point.dx >= estimateDiff &&
         point.dx < tagX &&
         tagY < point.dy &&
-        totalY > point.dy)
+        stopingYRef > point.dy)
       return true;
     else
       return false;
   }
 
   bool findAllFieldsHorizontally(
-      double tagX, double tagY, Offset point, double threshold) {
+      double tagX, double tagY, Offset point, double threshold,
+      {bool isOnSameLine = false}) {
     var estimateSum = tagY + threshold;
     var estimateDiff = tagY - threshold;
     print('x reference $tagX');
-    print('estimated Sum $estimateSum');
-    print('estimated Diff $estimateDiff');
+    print('estimated Sum for y $estimateSum');
+    print('estimated Diff for y $estimateDiff');
     print('${point.dx} x ${point.dy} y');
 
-    if (tagY == point.dy && tagX <= point.dx)
+    bool xStopingExp = isOnSameLine ? tagX <= point.dx : tagX < point.dx;
+
+    if (tagY == point.dy && xStopingExp)
       return true;
-    else if (point.dy <= estimateSum && point.dy > tagY && tagX <= point.dx)
+    else if (point.dy <= estimateSum && point.dy > tagY && xStopingExp)
       return true;
-    else if (point.dy >= estimateDiff && point.dy < tagY && tagX <= point.dx)
+    else if (point.dy >= estimateDiff && point.dy < tagY && xStopingExp)
       return true;
     else
       return false;

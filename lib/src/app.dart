@@ -91,7 +91,7 @@ class ScanButton extends StatelessWidget {
     );
     List<Map<List<String>, List<bool>>> _data =
         await _ocrService.getSmartData(_image);
-    if (_data[1].isNotEmpty) {
+    if (_data.isNotEmpty) {
       print('_data[1].isEmpty' +
           _data[1].isEmpty.toString() +
           _data[1].toString());
