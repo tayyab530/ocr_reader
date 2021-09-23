@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:google_ml_kit/google_ml_kit.dart';
+import 'package:ocr_reader/src/models/models.dart';
 
 class OcrService with ChangeNotifier {
   final TextDetector _recognizer = GoogleMlKit.vision.textDetector();
@@ -323,11 +324,70 @@ class OcrService with ChangeNotifier {
                 ),
         )
         .toList();
+
+    if (includeLine) {
+      List<Line> _listOfLines = [];
+      _lines = _lines.map(
+        (line) {
+          TextElement _word = line.elements.first;
+          double widthOfWord =
+              _word.cornerPoints[2].dx - _word.cornerPoints[3].dx;
+          double _spaceWidth = (widthOfWord / _word.text.length) * 1.33333;
+          double _currentRefrenceX = _word.cornerPoints[2].dx;
+          print('widthOfWord $widthOfWord');
+          print('_spaceWidth $_spaceWidth');
+          TextLine _line = line as TextLine;
+          List<Word> _listofElement = [];
+          String text = '';
+          bool _break = false;
+
+          line.elements.forEach(
+            (element) {
+              if (!_break) {
+                Word word;
+                TextElement _element = element;
+                double _widthDifference =
+                    element.cornerPoints[3].dx - _currentRefrenceX;
+                print('text ${{element.text}}');
+                print('_prevRefrenceX $_currentRefrenceX');
+                print(
+                    'x2 ${element.cornerPoints[3].dx} - x1 $_currentRefrenceX = $_widthDifference');
+                bool isAWord = (_widthDifference) <= _spaceWidth;
+                print("isAWord $isAWord");
+                _currentRefrenceX = element.cornerPoints[2].dx;
+                print('_nextRefrenceX $_currentRefrenceX');
+                if (isAWord || _widthDifference <= 0) {
+                  word = Word(
+                    text: _element.text,
+                    cornerPoints: _element.cornerPoints,
+                  );
+                  _listofElement.add(word);
+                  text += (_element.text + ' ');
+                } else
+                  _break = true;
+              }
+            },
+          );
+
+          if (_listofElement.isNotEmpty)
+            _listOfLines.add(Line(
+              elements: _listofElement,
+              text: text,
+              cornerPoints: line.cornerPoints,
+            ));
+          print(_line.text);
+          return _line;
+        },
+      ).toList();
+      _lines = _listOfLines;
+    }
+
     _lines.forEach(
       (element) {
         print('${element.text} cornerPin ${element.cornerPoints.toString()}');
       },
     );
+
     return _lines;
   }
 
