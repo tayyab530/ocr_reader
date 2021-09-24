@@ -79,7 +79,7 @@ class OcrService with ChangeNotifier {
         ['quantity', 'qty'],
         TextType.line,
         true,
-        false,
+        true,
         SearchTrack.vertical,
         'total',
       );
@@ -88,7 +88,7 @@ class OcrService with ChangeNotifier {
         ['total'],
         TextType.line,
         false,
-        false,
+        true,
         SearchTrack.horizontal, //Offset(220.0, 1112.0)
         'total',
         includeLine: true,
@@ -125,7 +125,7 @@ class OcrService with ChangeNotifier {
     Map<List<String>, List<bool>> _numeric = {};
     _linesMap.forEach(
       (key, value) {
-        if (isNumeric(key[0])) _numeric.addAll({key: value});
+        if (isNumericAny(key[0])) _numeric.addAll({key: value});
       },
     );
     return _numeric;
@@ -141,12 +141,16 @@ class OcrService with ChangeNotifier {
     return _alphabetic;
   }
 
-  bool isNumeric(String str) {
+  bool isNumericAny(String str) {
     for (var i = 0; i < str.length; i++) {
       bool found = str[i].contains(new RegExp(r'[0-9]'));
       if (found) return true;
     }
     return false;
+  }
+
+  bool isNumericAll(String str) {
+    return double.tryParse(str) != null;
   }
 
   bool isAlpha(String str) {
@@ -326,60 +330,7 @@ class OcrService with ChangeNotifier {
         .toList();
 
     if (includeLine) {
-      List<Line> _listOfLines = [];
-      _lines = _lines.map(
-        (line) {
-          TextElement _word = line.elements.first;
-          double widthOfWord =
-              _word.cornerPoints[2].dx - _word.cornerPoints[3].dx;
-          double _spaceWidth = (widthOfWord / _word.text.length) * 1.33333;
-          double _currentRefrenceX = _word.cornerPoints[2].dx;
-          print('widthOfWord $widthOfWord');
-          print('_spaceWidth $_spaceWidth');
-          TextLine _line = line as TextLine;
-          List<Word> _listofElement = [];
-          String text = '';
-          bool _break = false;
-
-          line.elements.forEach(
-            (element) {
-              if (!_break) {
-                Word word;
-                TextElement _element = element;
-                double _widthDifference =
-                    element.cornerPoints[3].dx - _currentRefrenceX;
-                print('text ${{element.text}}');
-                print('_prevRefrenceX $_currentRefrenceX');
-                print(
-                    'x2 ${element.cornerPoints[3].dx} - x1 $_currentRefrenceX = $_widthDifference');
-                bool isAWord = (_widthDifference) <= _spaceWidth;
-                print("isAWord $isAWord");
-                _currentRefrenceX = element.cornerPoints[2].dx;
-                print('_nextRefrenceX $_currentRefrenceX');
-                if (isAWord || _widthDifference <= 0) {
-                  word = Word(
-                    text: _element.text,
-                    cornerPoints: _element.cornerPoints,
-                  );
-                  _listofElement.add(word);
-                  text += (_element.text + ' ');
-                } else
-                  _break = true;
-              }
-            },
-          );
-
-          if (_listofElement.isNotEmpty)
-            _listOfLines.add(Line(
-              elements: _listofElement,
-              text: text,
-              cornerPoints: line.cornerPoints,
-            ));
-          print(_line.text);
-          return _line;
-        },
-      ).toList();
-      _lines = _listOfLines;
+      _lines = separateWord(_lines);
     }
 
     _lines.forEach(
@@ -387,6 +338,21 @@ class OcrService with ChangeNotifier {
         print('${element.text} cornerPin ${element.cornerPoints.toString()}');
       },
     );
+
+    if (isNumeric) {
+      _lines = _lines.map((e) {
+        String _text = e.text;
+        List<String> _splittedText = _text.split(' ');
+        _splittedText.removeWhere((element) => !isNumericAll(element));
+        _text = _splittedText.join(" ");
+        _text = _text.isEmpty ? '0' : _text;
+        if (includeLine)
+          return Line(
+              text: _text, cornerPoints: e.cornerPoints, elements: e.elements);
+        else
+          return Word(text: _text, cornerPoints: e.cornerPoints);
+      }).toList();
+    }
 
     return _lines;
   }
@@ -460,6 +426,63 @@ class OcrService with ChangeNotifier {
       return element.text.isNotEmpty;
     });
     return [_vendor];
+  }
+
+  List<Line> separateWord(List<dynamic> _lines) {
+    List<Line> _listOfLines = [];
+    _lines = _lines.map(
+      (line) {
+        TextElement _word = line.elements.first;
+        double widthOfWord =
+            _word.cornerPoints[2].dx - _word.cornerPoints[3].dx;
+        double _spaceWidth = (widthOfWord / _word.text.length) * 1.33333;
+        double _currentRefrenceX = _word.cornerPoints[2].dx;
+        print('widthOfWord $widthOfWord');
+        print('_spaceWidth $_spaceWidth');
+        TextLine _line = line as TextLine;
+        List<Word> _listofElement = [];
+        String text = '';
+        bool _break = false;
+
+        line.elements.forEach(
+          (element) {
+            if (!_break) {
+              Word word;
+              TextElement _element = element;
+              double _widthDifference =
+                  element.cornerPoints[3].dx - _currentRefrenceX;
+              print('text ${{element.text}}');
+              print('_prevRefrenceX $_currentRefrenceX');
+              print(
+                  'x2 ${element.cornerPoints[3].dx} - x1 $_currentRefrenceX = $_widthDifference');
+              bool isAWord = (_widthDifference) <= _spaceWidth;
+              print("isAWord $isAWord");
+              _currentRefrenceX = element.cornerPoints[2].dx;
+              print('_nextRefrenceX $_currentRefrenceX');
+              if (isAWord || _widthDifference <= 0) {
+                word = Word(
+                  text: _element.text,
+                  cornerPoints: _element.cornerPoints,
+                );
+                _listofElement.add(word);
+                text += (_element.text + ' ');
+              } else
+                _break = true;
+            }
+          },
+        );
+
+        if (_listofElement.isNotEmpty)
+          _listOfLines.add(Line(
+            elements: _listofElement,
+            text: text,
+            cornerPoints: line.cornerPoints,
+          ));
+        print(_line.text);
+        return _line;
+      },
+    ).toList();
+    return _listOfLines;
   }
 }
 
