@@ -18,6 +18,7 @@ class _PreviewScreenState extends State<PreviewScreen> {
   String _vendor = 'Default';
   String _totalPrice = '0.0';
   String _grandTotal = '0.0';
+  double _totalTax = 0.0;
 
   @override
   void initState() {
@@ -97,14 +98,29 @@ class _PreviewScreenState extends State<PreviewScreen> {
               vertical: _height * 0.005,
               horizontal: 10.0,
             ),
-            child: Row(
+            child: Column(
               children: [
-                Text(
-                  'Total Price: ',
-                  style: TextStyle(fontWeight: FontWeight.bold),
+                Row(
+                  children: [
+                    Text(
+                      'Total Tax: ',
+                      style: TextStyle(fontWeight: FontWeight.w500),
+                    ),
+                    Text(
+                      '$_totalTax',
+                    ),
+                  ],
                 ),
-                Text(
-                  '$_totalPrice',
+                Row(
+                  children: [
+                    Text(
+                      'Total Price: ',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      '$_totalPrice',
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -162,30 +178,31 @@ class _PreviewScreenState extends State<PreviewScreen> {
     int _maxLength = maxLength(_list);
     print('max length = $_maxLength');
     _totalPrice = _list[3].isEmpty ? '0.0' : _list[3].first;
+    _totalTax = _list[4].isNotEmpty ? double.parse(_list[4].first) : 0.0;
 
     for (int i = 0; i < _maxLength; i++) {
       _rowData.add([]);
     }
     for (int i = 0; i < _maxLength; i++) {
-      if (i >= _list[0].length)
+      if (i >= _list[0].length || _list[0][i].isEmpty)
         _rowData[i].add('Not Selected');
       else
         _rowData[i].add(_list[0][i]);
       print('i = $i _list[0] length = ${_list[0].length}');
 
-      if (i >= _list[1].length)
-        _rowData[i].add('0');
+      if (i >= _list[1].length || _list[1][i].isEmpty)
+        _rowData[i].add('1');
       else
         _rowData[i].add(_list[1][i]);
-      print('i = $i _list[0] length = ${_list[1].length}');
+      print('i = $i _list[1] length = ${_list[1].length}');
 
-      if (i >= _list[2].length)
+      if (i >= _list[2].length || _list[2][i].isEmpty)
         _rowData[i].add('0.0');
       else
         _rowData[i].add(_list[2][i]);
-      print('i = $i _list[0] length = ${_list[2].length}');
+      print('i = $i _list[2] length = ${_list[2].length}');
 
-      _rowData[i].add(_list[4].isEmpty ? '0.0' : _list[4].first);
+      _rowData[i].add('0.0');
     }
     print(_rowData.toString());
     for (int i = 1; i <= _maxLength; i++) {

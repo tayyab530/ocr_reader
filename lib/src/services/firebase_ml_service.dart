@@ -345,7 +345,6 @@ class OcrService with ChangeNotifier {
         List<String> _splittedText = _text.split(' ');
         _splittedText.removeWhere((element) => !isNumericAll(element));
         _text = _splittedText.join(" ");
-        _text = _text.isEmpty ? '0' : _text;
         if (includeLine)
           return Line(
               text: _text, cornerPoints: e.cornerPoints, elements: e.elements);
