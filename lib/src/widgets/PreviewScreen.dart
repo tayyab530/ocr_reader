@@ -47,107 +47,110 @@ class _PreviewScreenState extends State<PreviewScreen> {
         _mediaQuery.padding.top -
         _appBar.preferredSize.height;
 
-    return Scaffold(
-      appBar: _appBar,
-      body: Column(
-        children: [
-          Chip(
-            label: Text(_vendor),
-          ),
-          Container(
-            height: _height * 0.78,
-            child: InteractiveViewer(
-              constrained: false,
-              child: DataTable(
-                columns: [
-                  DataColumn(
-                    label: Expanded(
-                      flex: 1,
-                      child: Text('Items'),
+    return WillPopScope(
+      onWillPop: () async => false,
+      child: Scaffold(
+        appBar: _appBar,
+        body: Column(
+          children: [
+            Chip(
+              label: Text(_vendor),
+            ),
+            Container(
+              height: _height * 0.78,
+              child: InteractiveViewer(
+                constrained: false,
+                child: DataTable(
+                  columns: [
+                    DataColumn(
+                      label: Expanded(
+                        flex: 1,
+                        child: Text('Items'),
+                      ),
                     ),
+                    DataColumn(
+                      numeric: true,
+                      label: Expanded(
+                        flex: 1,
+                        child: Text('Quantity'),
+                      ),
+                    ),
+                    DataColumn(
+                      numeric: true,
+                      label: Expanded(
+                        flex: 1,
+                        child: Text('Unit Price'),
+                      ),
+                    ),
+                    DataColumn(
+                      numeric: true,
+                      label: Expanded(
+                        flex: 1,
+                        child: Text('Tax'),
+                      ),
+                    ),
+                  ],
+                  rows: generateRows(),
+                ),
+              ),
+            ),
+            Container(
+              alignment: Alignment.center,
+              margin: EdgeInsets.symmetric(
+                vertical: _height * 0.005,
+                horizontal: 10.0,
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        'Total Tax: ',
+                        style: TextStyle(fontWeight: FontWeight.w500),
+                      ),
+                      Text(
+                        '$_totalTax',
+                      ),
+                    ],
                   ),
-                  DataColumn(
-                    numeric: true,
-                    label: Expanded(
-                      flex: 1,
-                      child: Text('Quantity'),
-                    ),
-                  ),
-                  DataColumn(
-                    numeric: true,
-                    label: Expanded(
-                      flex: 1,
-                      child: Text('Unit Price'),
-                    ),
-                  ),
-                  DataColumn(
-                    numeric: true,
-                    label: Expanded(
-                      flex: 1,
-                      child: Text('Tax'),
-                    ),
+                  Row(
+                    children: [
+                      Text(
+                        'Total Price: ',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      Text(
+                        '$_totalPrice',
+                      ),
+                    ],
                   ),
                 ],
-                rows: generateRows(),
               ),
-            ),
-          ),
-          Container(
-            alignment: Alignment.center,
-            margin: EdgeInsets.symmetric(
-              vertical: _height * 0.005,
-              horizontal: 10.0,
-            ),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    Text(
-                      'Total Tax: ',
-                      style: TextStyle(fontWeight: FontWeight.w500),
-                    ),
-                    Text(
-                      '$_totalTax',
-                    ),
-                  ],
-                ),
-                Row(
-                  children: [
-                    Text(
-                      'Total Price: ',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    Text(
-                      '$_totalPrice',
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          )
-        ],
-      ),
-      bottomSheet: Container(
-        margin: EdgeInsets.symmetric(
-          horizontal: 10.0,
-          vertical: 7.0,
-        ),
-        child: Row(
-          children: [
-            Text(
-              'Grand Total: ',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-              ),
-            ),
-            Text(
-              _grandTotal,
-              style: TextStyle(
-                fontSize: 18,
-              ),
-            ),
+            )
           ],
+        ),
+        bottomSheet: Container(
+          margin: EdgeInsets.symmetric(
+            horizontal: 10.0,
+            vertical: 7.0,
+          ),
+          child: Row(
+            children: [
+              Text(
+                'Grand Total: ',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
+              ),
+              Text(
+                _grandTotal,
+                style: TextStyle(
+                  fontSize: 18,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -178,7 +181,9 @@ class _PreviewScreenState extends State<PreviewScreen> {
     int _maxLength = maxLength(_list);
     print('max length = $_maxLength');
     _totalPrice = _list[3].isEmpty ? '0.0' : _list[3].first;
-    _totalTax = _list[4].isNotEmpty ? double.parse(_list[4].first) : 0.0;
+    _totalTax = (_list[4].isNotEmpty && double.tryParse(_list[4].first) != null)
+        ? double.parse(_list[4].first)
+        : 0.0;
 
     for (int i = 0; i < _maxLength; i++) {
       _rowData.add([]);

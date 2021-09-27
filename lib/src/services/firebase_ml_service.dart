@@ -96,9 +96,10 @@ class OcrService with ChangeNotifier {
 
       // ignore: unused_local_variable
       List<dynamic> _tax = findData([
+        'total tax',
         'tax amount',
-        'vat',
         'tax',
+        'vat',
       ], TextType.line, true, true, SearchTrack.horizontal, 'total',
           includeLine: true);
 

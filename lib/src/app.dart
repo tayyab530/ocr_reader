@@ -135,7 +135,7 @@ class ScanButton extends StatelessWidget {
       },
     );
 
-    await _ocrService.getText(_image).then((value) {
+    await _ocrService.getText(_image).then((results) {
       Navigator.of(context).pop();
       Navigator.of(context).pushNamed(AnalysisScreen.routeName);
     });
