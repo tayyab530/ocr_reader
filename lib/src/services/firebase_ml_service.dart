@@ -120,6 +120,7 @@ class OcrService with ChangeNotifier {
 
   clearData() {
     _linesMap = {};
+    _segregatedData = {};
   }
 
   Map<List<String>, List<bool>> numericLines() {

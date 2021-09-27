@@ -98,12 +98,12 @@ class ScanButton extends StatelessWidget {
       Navigator.of(context).pop();
       await Navigator.of(context)
           .pushNamed(PreviewScreen.routeName, arguments: _data);
+    } else {
+      await _ocrService.getText(_image).then((value) {
+        Navigator.of(context).pop();
+      });
+      await Navigator.of(context).pushNamed(WizardScreen.routeName);
     }
-
-    await _ocrService.getText(_image).then((value) {
-      Navigator.of(context).pop();
-    });
-    await Navigator.of(context).pushNamed(WizardScreen.routeName);
   }
 
   getImageFromCamera(BuildContext context) async {

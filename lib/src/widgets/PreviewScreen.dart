@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:ocr_reader/src/providers/data.dart';
+import 'package:ocr_reader/src/services/firebase_ml_service.dart';
 import 'package:ocr_reader/src/widgets/row_edit_form.dart';
 import 'package:provider/provider.dart';
 
@@ -29,6 +30,7 @@ class _PreviewScreenState extends State<PreviewScreen> {
   Widget build(BuildContext context) {
     _data = ModalRoute.of(context)!.settings.arguments
         as List<Map<List<String>, List<bool>>>;
+    final _ocrService = Provider.of<OcrService>(context, listen: false);
     if (init) {
       _rowsDataMap = Provider.of<Data>(context, listen: false).getData()['map'];
       _totalPrice =
@@ -40,117 +42,121 @@ class _PreviewScreenState extends State<PreviewScreen> {
 
     final _appBar = AppBar(
       title: Text('Preview Receipt'),
-      automaticallyImplyLeading: false,
+      leading: IconButton(
+        onPressed: () {
+          _ocrService.clearData();
+          Navigator.of(context).pop();
+        },
+        icon: Icon(Icons.arrow_back),
+      ),
     );
+
     final _mediaQuery = MediaQuery.of(context);
     final _height = _mediaQuery.size.height -
         _mediaQuery.padding.top -
         _appBar.preferredSize.height;
 
-    return WillPopScope(
-      onWillPop: () async => false,
-      child: Scaffold(
-        appBar: _appBar,
-        body: Column(
-          children: [
-            Chip(
-              label: Text(_vendor),
-            ),
-            Container(
-              height: _height * 0.78,
-              child: InteractiveViewer(
-                constrained: false,
-                child: DataTable(
-                  columns: [
-                    DataColumn(
-                      label: Expanded(
-                        flex: 1,
-                        child: Text('Items'),
-                      ),
+    return Scaffold(
+      appBar: _appBar,
+      body: Column(
+        children: [
+          Chip(
+            label: Text(_vendor),
+          ),
+          Container(
+            height: _height * 0.78,
+            child: InteractiveViewer(
+              constrained: false,
+              child: DataTable(
+                columns: [
+                  DataColumn(
+                    label: Expanded(
+                      flex: 1,
+                      child: Text('Items'),
                     ),
-                    DataColumn(
-                      numeric: true,
-                      label: Expanded(
-                        flex: 1,
-                        child: Text('Quantity'),
-                      ),
-                    ),
-                    DataColumn(
-                      numeric: true,
-                      label: Expanded(
-                        flex: 1,
-                        child: Text('Unit Price'),
-                      ),
-                    ),
-                    DataColumn(
-                      numeric: true,
-                      label: Expanded(
-                        flex: 1,
-                        child: Text('Tax'),
-                      ),
-                    ),
-                  ],
-                  rows: generateRows(),
-                ),
-              ),
-            ),
-            Container(
-              alignment: Alignment.center,
-              margin: EdgeInsets.symmetric(
-                vertical: _height * 0.005,
-                horizontal: 10.0,
-              ),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      Text(
-                        'Total Tax: ',
-                        style: TextStyle(fontWeight: FontWeight.w500),
-                      ),
-                      Text(
-                        '$_totalTax',
-                      ),
-                    ],
                   ),
-                  Row(
-                    children: [
-                      Text(
-                        'Total Price: ',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      Text(
-                        '$_totalPrice',
-                      ),
-                    ],
+                  DataColumn(
+                    numeric: true,
+                    label: Expanded(
+                      flex: 1,
+                      child: Text('Quantity'),
+                    ),
+                  ),
+                  DataColumn(
+                    numeric: true,
+                    label: Expanded(
+                      flex: 1,
+                      child: Text('Unit Price'),
+                    ),
+                  ),
+                  DataColumn(
+                    numeric: true,
+                    label: Expanded(
+                      flex: 1,
+                      child: Text('Tax'),
+                    ),
                   ),
                 ],
+                rows: generateRows(),
               ),
-            )
-          ],
+            ),
+          ),
+          Container(
+            alignment: Alignment.center,
+            margin: EdgeInsets.symmetric(
+              vertical: _height * 0.005,
+              horizontal: 10.0,
+            ),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      'Total Tax: ',
+                      style: TextStyle(fontWeight: FontWeight.w500),
+                    ),
+                    Text(
+                      '$_totalTax',
+                    ),
+                  ],
+                ),
+                Row(
+                  children: [
+                    Text(
+                      'Total Price: ',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      '$_totalPrice',
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          )
+        ],
+      ),
+      bottomSheet: Container(
+        margin: EdgeInsets.symmetric(
+          horizontal: 10.0,
+          vertical: 7.0,
         ),
-        bottomSheet: Container(
-          margin: EdgeInsets.symmetric(
-            horizontal: 10.0,
-            vertical: 7.0,
-          ),
-          child: Row(
-            children: [
-              Text(
-                'Grand Total: ',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                ),
+        child: Row(
+          children: [
+            Text(
+              'Grand Total: ',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
               ),
-              Text(
-                _grandTotal,
-                style: TextStyle(
-                  fontSize: 18,
-                ),
+            ),
+            Text(
+              _grandTotal,
+              style: TextStyle(
+                fontSize: 18,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

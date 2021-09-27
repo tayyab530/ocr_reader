@@ -47,9 +47,17 @@ class _WizardScreenState extends State<WizardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final _ocrService = Provider.of<OcrService>(context, listen: false);
     return Scaffold(
       appBar: AppBar(
         title: Text('Wizard'),
+        leading: IconButton(
+          onPressed: () {
+            _ocrService.clearData();
+            Navigator.of(context).pop();
+          },
+          icon: Icon(Icons.arrow_back),
+        ),
         actions: [
           if (isLinkEnable.keys.first)
             IconButton(
