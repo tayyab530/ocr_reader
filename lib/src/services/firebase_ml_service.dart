@@ -292,7 +292,7 @@ class OcrService with ChangeNotifier {
     if (track == SearchTrack.vertical) {
       var _stopingYRef = searchTag(
           [yRef, 'bill amount'], TextType.line, true, SearchTrack.vertical);
-      if (_stopingYRef is TextLine)
+      if (_stopingYRef is TextLine || _stopingYRef is TextElement)
         _stopingY = _stopingYRef.cornerPoints[0].dy;
       else {
         _stopingY =
