@@ -167,7 +167,7 @@ class OcrService with ChangeNotifier {
       enableMulTags,
       track,
     );
-    if (!((_result is TextElement) || (_result is TextLine))) {
+    if (!((_result is Word) || (_result is Line))) {
       print('No element found.');
       return [];
     } else
@@ -205,7 +205,7 @@ class OcrService with ChangeNotifier {
       for (String tag in _tags) {
         try {
           var _splittedTag = tag.split(' ');
-          TextLine _searchLineData;
+          Line _searchLineData;
           _searchLineData =
               _segregatedData.values.toList()[type.index].firstWhere(
                     (data) => data.text.toLowerCase().contains(
@@ -252,15 +252,20 @@ class OcrService with ChangeNotifier {
 
   void segregateIntoMap() {
     List<TextBlock> _blocks = [];
-    List<TextLine> _lines = [];
-    List<TextElement> _elements = [];
+    List<Line> _lines = [];
+    List<Word> _elements = [];
 
     for (var block in _extractedText.blocks) {
       _blocks.add(block);
       for (var line in block.lines) {
-        _lines.add(line);
+        Line _newLine = checkForStrangeReadings(line, ['*', '\'', '\"']);
+        print('Line ${_newLine.text} isEmpty ${_newLine.text.isEmpty} ');
+        if (_newLine.text.isNotEmpty) _lines.add(_newLine);
         for (var element in line.elements) {
-          _elements.add(element);
+          _elements.add(Word(
+            text: element.text,
+            cornerPoints: element.cornerPoints,
+          ));
         }
       }
     }
@@ -285,7 +290,7 @@ class OcrService with ChangeNotifier {
     if (track == SearchTrack.vertical) {
       var _stopingYRef = searchTag(
           [yRef, 'bill amount'], TextType.line, true, SearchTrack.vertical);
-      if (_stopingYRef is TextLine || _stopingYRef is TextElement)
+      if (_stopingYRef is Line || _stopingYRef is Word)
         _stopingY = _stopingYRef.cornerPoints[0].dy;
       else {
         _stopingY =
@@ -427,14 +432,14 @@ class OcrService with ChangeNotifier {
     List<Line> _listOfLines = [];
     _lines = _lines.map(
       (line) {
-        TextElement _word = line.elements.first;
+        Word _word = line.elements.first;
         double widthOfWord =
             _word.cornerPoints[2].dx - _word.cornerPoints[3].dx;
         double _spaceWidth = (widthOfWord / _word.text.length) * 1.33333;
         double _currentRefrenceX = _word.cornerPoints[2].dx;
         print('widthOfWord $widthOfWord');
         print('_spaceWidth $_spaceWidth');
-        TextLine _line = line as TextLine;
+        Line _line = line;
         List<Word> _listofElement = [];
         String text = '';
         bool _break = false;
@@ -443,7 +448,7 @@ class OcrService with ChangeNotifier {
           (element) {
             if (!_break) {
               Word word;
-              TextElement _element = element;
+              Word _element = element;
               double _widthDifference =
                   element.cornerPoints[3].dx - _currentRefrenceX;
               print('text ${{element.text}}');
@@ -478,6 +483,27 @@ class OcrService with ChangeNotifier {
       },
     ).toList();
     return _listOfLines;
+  }
+
+  Line checkForStrangeReadings(TextLine _textLine, List<String> _charList) {
+    String allText = _textLine.text;
+    RegExp _regExp = RegExp(r'^[a-zA-Z0-9]');
+
+    // for (var _char in _charList) {
+    //   if (_regExp.hasMatch(_char)) {
+    //     allText = allText.replaceAll(_char, '');
+    //   }
+    // }
+    if (!_regExp.hasMatch(allText)) allText = '';
+    List<Word> _words = _textLine.elements.toList().map<Word>((element) {
+      return Word(text: element.text, cornerPoints: element.cornerPoints);
+    }).toList();
+
+    return Line(
+      text: allText,
+      cornerPoints: _textLine.cornerPoints,
+      elements: _words,
+    );
   }
 }
 
