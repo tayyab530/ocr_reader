@@ -32,18 +32,11 @@ class OcrService with ChangeNotifier {
   Future<List<Map<List<String>, List<bool>>>> getSmartData(
       InputImage image) async {
     try {
-      _extractedText = await _recognizer.processImage(image);
+      _extractedText = await _recognizer.processImage(
+        image,
+      );
 
-      int i = 0;
-      for (TextBlock block in _extractedText.blocks) {
-        for (TextLine line in block.lines) {
-          print(line.text);
-          _linesMap.addAll({
-            [line.text, i.toString()]: [false, false]
-          });
-          i++;
-        }
-      }
+      print(_extractedText.text);
 
       segregateIntoMap();
       List<dynamic> _item = findData(
@@ -305,6 +298,7 @@ class OcrService with ChangeNotifier {
     double _tagY = _searchData.cornerPoints[isNumeric ? 2 : 3].dy as double;
     double _horizontalThresholdRatio =
         _cornerPoints[2].dy - _cornerPoints[1].dy;
+    double _verticalThresholdRatio = _cornerPoints[1].dx - _cornerPoints[0].dx;
     print('tag_x $_tagX');
     print('tag_y $_tagY');
     print("_horizontalThresholdRatio $_horizontalThresholdRatio");
@@ -318,7 +312,7 @@ class OcrService with ChangeNotifier {
                   _tagX,
                   _tagY,
                   line.cornerPoints[isNumeric ? 2 : 3],
-                  20.0,
+                  _verticalThresholdRatio,
                   _stopingY,
                   line.text,
                 )

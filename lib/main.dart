@@ -7,7 +7,6 @@ import '../src/services/image_picker_service.dart';
 import '/src/app.dart';
 
 void main() {
-  print(double.tryParse('..04').toString());
   runApp(
     MultiProvider(
       providers: [
